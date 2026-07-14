@@ -2,13 +2,32 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Bot Forex con Frontend</title>
+  <title>Dashboard Bot Forex</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Chart.js y plugin financiero -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
 </head>
 <body>
   <h1>Dashboard Bot Forex</h1>
-  <canvas id="chart"></canvas>
+
+  <!-- Selector de pares -->
+  <select id="pairSelector">
+    <option value="EUR/USD">EUR/USD</option>
+    <option value="GBP/USD">GBP/USD</option>
+    <option value="USD/JPY">USD/JPY</option>
+  </select>
+
+  <!-- Gráfico de velas -->
+  <canvas id="candlestick"></canvas>
+  <!-- Gráfico RSI -->
+  <canvas id="rsi"></canvas>
+  <!-- Gráfico Volumen -->
+  <canvas id="volume"></canvas>
+
+  <!-- Señales -->
+  <div id="signals"></div>
+
   <script src="script.js"></script>
 </body>
 </html>
- 
