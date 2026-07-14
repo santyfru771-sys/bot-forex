@@ -1,0 +1,19 @@
+{
+  "name": "bot-forex",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@adiwajshing/baileys": "^5.0.0",
+    "dotenv": "^17.4.2",
+    "node-fetch": "^3.3.2",
+    "technicalindicators": "^3.1.0"
+  }
+}
