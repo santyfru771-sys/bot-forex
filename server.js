@@ -1,33 +1,54 @@
 const express = require("express");
 const axios = require("axios");
+const { RSI, SMA } = require("technicalindicators");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.TWELVE_DATA_KEY; // guardá tu clave en .env
+const API_KEY = process.env.TWELVE_DATA_KEY;
 
-// Ruta para obtener datos de un par de divisas
+const PAIRS = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD"];
+
+app.use(express.static("public")); // servir frontend
+
+// Estrategia simple: RSI + SMA
+function checkSignal(values) {
+  const closes = values.map(v => parseFloat(v.close)).reverse();
+  const rsi = RSI.calculate({ values: closes, period: 14 });
+  const sma = SMA.calculate({ values: closes, period: 20 });
+
+  const lastRSI = rsi[rsi.length - 1];
+  const lastClose = closes[closes.length - 1];
+  const lastSMA = sma[sma.length - 1];
+
+  if (lastRSI < 30 && lastClose > lastSMA) return "BUY";
+  if (lastRSI > 70 && lastClose < lastSMA) return "SELL";
+  return "HOLD";
+}
+
+// Endpoint para obtener datos de un par
 app.get("/data/:pair", async (req, res) => {
-  const pair = req.params.pair; // ejemplo: EUR/USD
+  const pair = req.params.pair;
   try {
     const response = await axios.get("https://api.twelvedata.com/time_series", {
       params: {
         symbol: pair,
         interval: "15min",
-        outputsize: 10,
+        outputsize: 50,
         apikey: API_KEY,
       },
     });
 
-    // Si la API responde con error
     if (response.data.status === "error") {
       return res.status(400).json({ error: response.data.message });
     }
 
-    // Devolver datos limpios
+    const signal = checkSignal(response.data.values);
+
     res.json({
       meta: response.data.meta,
       values: response.data.values,
+      signal,
       status: "ok",
     });
   } catch (error) {
@@ -36,7 +57,11 @@ app.get("/data/:pair", async (req, res) => {
   }
 });
 
-// Mantener el servidor vivo en Render
+// Ruta raíz
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
