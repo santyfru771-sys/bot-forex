@@ -2,32 +2,51 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard Bot Forex</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Chart.js y plugin financiero -->
+  <title>Bot Forex Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
 </head>
 <body>
-  <h1>Dashboard Bot Forex</h1>
+  <h1>Bot Forex Dashboard</h1>
+  <select id="pairSelector"></select>
+  <p id="signal"></p>
+  <canvas id="chart" width="800" height="400"></canvas>
 
-  <!-- Selector de pares -->
-  <select id="pairSelector">
-    <option value="EUR/USD">EUR/USD</option>
-    <option value="GBP/USD">GBP/USD</option>
-    <option value="USD/JPY">USD/JPY</option>
-  </select>
+  <script>
+    const PAIRS = ["EUR/USD","GBP/USD","USD/JPY","AUD/USD","USD/CAD","USD/CHF","NZD/USD"];
+    const selector = document.getElementById("pairSelector");
+    PAIRS.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = p;
+      selector.appendChild(opt);
+    });
 
-  <!-- Gráfico de velas -->
-  <canvas id="candlestick"></canvas>
-  <!-- Gráfico RSI -->
-  <canvas id="rsi"></canvas>
-  <!-- Gráfico Volumen -->
-  <canvas id="volume"></canvas>
+    async function loadPair(pair) {
+      const res = await fetch(`/data/${pair}`);
+      const data = await res.json();
 
-  <!-- Señales -->
-  <div id="signals"></div>
+      document.getElementById("signal").innerText = `Señal actual: ${data.signal}`;
 
-  <script src="script.js"></script>
+      const values = data.values.map(v => ({
+        x: new Date(v.datetime),
+        o: parseFloat(v.open),
+        h: parseFloat(v.high),
+        l: parseFloat(v.low),
+        c: parseFloat(v.close)
+      }));
+
+      new Chart(document.getElementById("chart"), {
+        type: "candlestick",
+        data: {
+          datasets: [{ label: pair, data: values }]
+        }
+      });
+    }
+
+    selector.addEventListener("change", e => loadPair(e.target.value));
+    loadPair(PAIRS[0]);
+  </script>
 </body>
 </html>
+
