@@ -23,7 +23,8 @@
     });
 
     async function loadPair(pair) {
-      const res = await fetch(`/data/${pair}`);
+      const res = await fetch(`/data/${pair.replace("/", "/")}`);
+
       const data = await res.json();
 
       document.getElementById("signal").innerText = `Señal actual: ${data.signal}`;
