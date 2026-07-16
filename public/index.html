@@ -23,17 +23,15 @@
     });
 
     async function loadPair(pair) {
-      // Usar el par dinámico en la ruta
       const [base, quote] = pair.split("/");
       const res = await fetch(`/data/${base}/${quote}`);
       const data = await res.json();
 
-      // Mostrar último cierre como "señal"
+      // Mostrar último cierre
       const ultimo = data.values[0];
-      document.getElementById("signal").innerText = 
-        `Último cierre: ${ultimo.close}`;
+      document.getElementById("signal").innerText = `Último cierre: ${ultimo.close}`;
 
-      // Preparar datos para velas
+      // Convertir datos a formato candlestick
       const values = data.values.map(v => ({
         x: new Date(v.datetime),
         o: parseFloat(v.open),
@@ -42,10 +40,22 @@
         c: parseFloat(v.close)
       }));
 
+      // Calcular SMA de 5 períodos
+      const sma = [];
+      for (let i = 4; i < values.length; i++) {
+        const slice = values.slice(i - 4, i + 1);
+        const avg = slice.reduce((sum, v) => sum + v.c, 0) / slice.length;
+        sma.push({ x: values[i].x, y: avg });
+      }
+
+      // Dibujar gráfico con velas + SMA
       new Chart(document.getElementById("chart"), {
         type: "candlestick",
         data: {
-          datasets: [{ label: pair, data: values }]
+          datasets: [
+            { label: pair, data: values },
+            { label: "SMA (5)", type: "line", data: sma, borderColor: "blue", borderWidth: 2 }
+          ]
         }
       });
     }
@@ -55,3 +65,4 @@
   </script>
 </body>
 </html>
+
