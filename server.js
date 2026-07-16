@@ -27,7 +27,13 @@ function checkSignal(values) {
 }
 
 // Endpoint para obtener datos de un par
-app.get("/data/:pair", async (req, res) => {
+app.get("/data/:base/:quote", async (req, res) => {
+  const { base, quote } = req.params;
+  const pair = `${base}/${quote}`;
+  // ... resto igual
+});
+
+
   const pair = req.params.pair;
   try {
     const response = await axios.get("https://api.twelvedata.com/time_series", {
