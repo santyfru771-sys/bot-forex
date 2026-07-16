@@ -4,25 +4,41 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.use(express.static("public"));
 const API_KEY = process.env.TWELVE_DATA_KEY; // guardá tu clave en .env
 
-// Ruta para obtener datos de un par de divisas
+// Servir archivos estáticos desde la carpeta public
+app.use(express.static("public"));
+
+// Función auxiliar para pedir datos a Twelve Data
 async function getData(pair) {
   try {
     const response = await axios.get("https://api.twelvedata.com/time_series", {
       params: {
         symbol: pair,
         interval: "1min",
-        apikey: process.env.API_KEY
+        outputsize: 10,
+        apikey: API_KEY
       }
     });
-    return response.data;
+
+    // Si la API devuelve error
+    if (response.data.status === "error") {
+      return { error: response.data.message };
+    }
+
+    // Devolver datos limpios
+    return {
+      meta: response.data.meta,
+      values: response.data.values,
+      status: "ok"
+    };
   } catch (err) {
     console.error("Error en la API:", err.message);
-    return { error: "No se pudo obtener datos" };
+    return { error: "Error interno del servidor" };
   }
 }
+
+// Ruta para obtener datos de un par de divisas
 app.get("/data/:base/:quote", async (req, res) => {
   const { base, quote } = req.params;
   const pair = `${base}/${quote}`;
@@ -30,19 +46,7 @@ app.get("/data/:base/:quote", async (req, res) => {
   res.json(data);
 });
 
-    // Devolver datos limpios
-    res.json({
-      meta: response.data.meta,
-      values: response.data.values,
-      status: "ok",
-    });
-  } catch (error) {
-    console.error("Error al consultar Twelve Data:", error.message);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// Mantener el servidor vivo en Render
+// Mantener el servidor vivo en Railway
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
