@@ -23,12 +23,17 @@
     });
 
     async function loadPair(pair) {
-      const res = await fetch(`/data/${pair.replace("/", "/")}`);
-
+      // Usar el par dinámico en la ruta
+      const [base, quote] = pair.split("/");
+      const res = await fetch(`/data/${base}/${quote}`);
       const data = await res.json();
 
-      document.getElementById("signal").innerText = `Señal actual: ${data.signal}`;
+      // Mostrar último cierre como "señal"
+      const ultimo = data.values[0];
+      document.getElementById("signal").innerText = 
+        `Último cierre: ${ultimo.close}`;
 
+      // Preparar datos para velas
       const values = data.values.map(v => ({
         x: new Date(v.datetime),
         o: parseFloat(v.open),
@@ -50,4 +55,3 @@
   </script>
 </body>
 </html>
-
