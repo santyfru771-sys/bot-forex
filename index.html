@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Forex - Análisis Multi-Timeframe</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Bot Forex - Análisis Técnico</h1>
+            <p>Monitoreo de Forex con Análisis Multi-Timeframe</p>
+        </header>
+
+        <nav>
+            <div class="nav-group">
+                <label for="pairSelector">Selecciona Par de Divisas:</label>
+                <select id="pairSelector">
+                    <option value="EUR/USD">EUR/USD</option>
+                    <option value="GBP/USD">GBP/USD</option>
+                    <option value="USD/JPY">USD/JPY</option>
+                    <option value="USD/CHF">USD/CHF</option>
+                    <option value="AUD/USD">AUD/USD</option>
+                </select>
+            </div>
+            <div class="nav-group">
+                <button id="refreshBtn" class="btn-primary">🔄 Actualizar Datos</button>
+                <span id="lastUpdate" class="last-update">Actualizando...</span>
+            </div>
+        </nav>
+
+        <main>
+            <!-- Sección de Precio Actual -->
+            <section class="current-price">
+                <div class="price-card">
+                    <h2 id="pairName">EUR/USD</h2>
+                    <div class="price-display">
+                        <span id="currentPrice" class="big-price">-</span>
+                        <span id="priceChange" class="price-change">-</span>
+                    </div>
+                    <p id="priceTime" class="price-time">-</p>
+                </div>
+            </section>
+
+            <!-- Sección de Alertas -->
+            <section class="alerts-section">
+                <h3>🚨 Alertas Detectadas</h3>
+                <div id="alertsContainer" class="alerts-container">
+                    <p class="no-alerts">Analizando datos...</p>
+                </div>
+            </section>
+
+            <!-- Timeframe Tabs -->
+            <section class="timeframes">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-timeframe="1h">1 Hora</button>
+                    <button class="tab-btn" data-timeframe="15m">15 Minutos</button>
+                    <button class="tab-btn" data-timeframe="5m">5 Minutos</button>
+                </div>
+
+                <!-- 1H Analysis -->
+                <div class="tab-content active" data-timeframe="1h">
+                    <h3>Análisis - 1 Hora</h3>
+                    <div class="analysis-grid">
+                        <div class="analysis-box">
+                            <h4>Tendencia</h4>
+                            <p id="trend-1h" class="trend-indicator">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>Zona de Interés</h4>
+                            <p id="zone-1h">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>RSI</h4>
+                            <p id="rsi-1h">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>Volumen</h4>
+                            <p id="volume-1h">-</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-1h"></canvas>
+                    </div>
+                </div>
+
+                <!-- 15m Analysis -->
+                <div class="tab-content" data-timeframe="15m">
+                    <h3>Análisis - 15 Minutos</h3>
+                    <div class="analysis-grid">
+                        <div class="analysis-box">
+                            <h4>Tendencia</h4>
+                            <p id="trend-15m" class="trend-indicator">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>Zona de Interés</h4>
+                            <p id="zone-15m">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>RSI</h4>
+                            <p id="rsi-15m">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>Volumen</h4>
+                            <p id="volume-15m">-</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-15m"></canvas>
+                    </div>
+                </div>
+
+                <!-- 5m Analysis -->
+                <div class="tab-content" data-timeframe="5m">
+                    <h3>Análisis - 5 Minutos (Entrada)</h3>
+                    <div class="analysis-grid">
+                        <div class="analysis-box">
+                            <h4>Tendencia</h4>
+                            <p id="trend-5m" class="trend-indicator">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>Zona de Interés</h4>
+                            <p id="zone-5m">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>RSI</h4>
+                            <p id="rsi-5m">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>Volumen</h4>
+                            <p id="volume-5m">-</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-5m"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Educativa (placeholder) -->
+            <section class="education-section">
+                <h3>📚 Conceptos</h3>
+                <div class="education-grid">
+                    <div class="edu-card">
+                        <h4>¿Qué es RSI?</h4>
+                        <p>El Índice de Fuerza Relativa mide la magnitud de cambios en los precios. Valores &gt; 70 = Sobrecompra, &lt; 30 = Sobreventa.</p>
+                    </div>
+                    <div class="edu-card">
+                        <h4>¿Qué es EMA?</h4>
+                        <p>Media Móvil Exponencial que da más peso a los datos recientes. Las EMAs 20, 50 y 200 son zonas de soporte/resistencia dinámicas.</p>
+                    </div>
+                    <div class="edu-card">
+                        <h4>Multi-Timeframe</h4>
+                        <p>Analizar múltiples temporalidades confirma la fuerza de una señal. 1H = contexto, 15m = confirmación, 5m = entrada.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>🔗 Datos en tiempo real desde Twelve Data | Actualización cada 60 segundos</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
