@@ -1,9 +1,9 @@
 // Configuración global
 const CONFIG = {
-  autoRefreshInterval: 60000, // 60 segundos
+  autoRefreshInterval: 20000, // 20 segundos para actualizar datos dentro de la vela de 2h
   apiBaseUrl: window.location.hostname === 'localhost' 
     ? 'http://localhost:3000' 
-    : '', // En producción usa el mismo dominio
+    : '',
 };
 
 // Estado global
@@ -11,10 +11,11 @@ let state = {
   currentPair: 'EUR/USD',
   analysisData: null,
   charts: {},
-  autoRefreshTimer: null
+  autoRefreshTimer: null,
+  candleData2h: [] // Almacenar datos de velas de 2 horas
 };
 
-// Convertir par a formato API (EUR/USD -> EUR/USD)
+// Convertir par a formato API
 function formatPair(pair) {
   const [base, quote] = pair.split('/');
   return { base, quote };
@@ -75,6 +76,9 @@ async function updateCurrentPrice() {
   changeElement.className = 'price-change ' + (changePercent >= 0 ? 'up' : 'down');
   
   document.getElementById('priceTime').textContent = new Date(priceData.datetime).toLocaleString();
+  document.getElementById('priceMin').textContent = priceData.low.toFixed(5);
+  document.getElementById('priceMax').textContent = priceData.high.toFixed(5);
+  document.getElementById('priceVol').textContent = (priceData.volume / 1000).toFixed(0) + 'K';
 }
 
 // Mostrar error
@@ -122,9 +126,157 @@ function updateTimeframeAnalysis(timeframe, data) {
   document.getElementById(`volume-${timeframe}`).textContent = data.volumeTrend || '-';
 }
 
-// Crear gráfico de velas
-function createCandleChart(canvasId, data, timeframe) {
-  // Destruir gráfico anterior si existe
+// Crear gráfico con Lightweight Charts (velas de 2 horas)
+function createCandleChartLW(containerId, data) {
+  try {
+    // Destruir gráfico anterior si existe
+    if (state.charts[containerId]) {
+      state.charts[containerId].remove();
+    }
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Crear el chart
+    const chart = LightweightCharts.createChart(container, {
+      layout: {
+        textColor: '#e0e0e0',
+        background: { color: '#1e1e2e' }
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false
+      },
+      grid: {
+        vertLines: { color: 'rgba(255, 255, 255, 0.1)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.1)' }
+      }
+    });
+
+    // Crear serie de velas
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#00ff00',
+      downColor: '#ff4444',
+      wickUpColor: '#00ff00',
+      wickDownColor: '#ff4444',
+      borderUpColor: '#00ff00',
+      borderDownColor: '#ff4444'
+    });
+
+    // Procesar datos en velas de 2 horas
+    const candleData = generateCandlesFrom2HourData(data.rawData);
+    candleSeries.setData(candleData);
+
+    // Agregar líneas de EMA
+    const lineSeries20 = chart.addLineSeries({
+      color: '#ff6b6b',
+      lineWidth: 1
+    });
+
+    const lineSeries50 = chart.addLineSeries({
+      color: '#4ecdc4',
+      lineWidth: 1
+    });
+
+    const lineSeries200 = chart.addLineSeries({
+      color: '#95e1d3',
+      lineWidth: 1
+    });
+
+    // Calcular EMAs
+    const prices = data.rawData.map(d => parseFloat(d.close)).reverse();
+    const timestamps = data.rawData.map((d, i) => {
+      const date = new Date(d.datetime);
+      return Math.floor(date.getTime() / 1000); // Convertir a segundos
+    }).reverse();
+
+    const ema20 = calculateEMAArray(prices, 20);
+    const ema50 = calculateEMAArray(prices, 50);
+    const ema200 = calculateEMAArray(prices, 200);
+
+    // Crear datos de líneas
+    const emaData20 = ema20.map((val, i) => ({ time: timestamps[i], value: val }));
+    const emaData50 = ema50.map((val, i) => ({ time: timestamps[i], value: val }));
+    const emaData200 = ema200.map((val, i) => ({ time: timestamps[i], value: val }));
+
+    lineSeries20.setData(emaData20);
+    lineSeries50.setData(emaData50);
+    lineSeries200.setData(emaData200);
+
+    // Ajustar vista
+    chart.timeScale().fitContent();
+
+    // Guardar referencia
+    state.charts[containerId] = chart;
+
+    // Crear leyenda
+    createChartLegend(containerId);
+
+  } catch (error) {
+    console.error('Error creating chart:', error);
+  }
+}
+
+// Generar velas de 2 horas a partir de datos de 1 minuto
+function generateCandlesFrom2HourData(rawData) {
+  if (!rawData || rawData.length === 0) return [];
+
+  const candles = [];
+  const dataReversed = [...rawData].reverse();
+  
+  for (let i = 0; i < dataReversed.length; i += 120) { // 120 minutos = 2 horas (aprox)
+    const chunk = dataReversed.slice(i, i + 120);
+    if (chunk.length === 0) continue;
+
+    const opens = chunk.map(d => parseFloat(d.open));
+    const highs = chunk.map(d => parseFloat(d.high));
+    const lows = chunk.map(d => parseFloat(d.low));
+    const closes = chunk.map(d => parseFloat(d.close));
+
+    const open = opens[0];
+    const high = Math.max(...highs);
+    const low = Math.min(...lows);
+    const close = closes[closes.length - 1];
+
+    const lastItem = chunk[chunk.length - 1];
+    const time = Math.floor(new Date(lastItem.datetime).getTime() / 1000);
+
+    candles.push({ time, open, high, low, close });
+  }
+
+  return candles.reverse();
+}
+
+// Crear leyenda para el gráfico
+function createChartLegend(containerId) {
+  const legendHTML = `
+    <div class="chart-legend">
+      <span class="legend-item"><span class="legend-color" style="color: #ff6b6b;">●</span> EMA 20</span>
+      <span class="legend-item"><span class="legend-color" style="color: #4ecdc4;">●</span> EMA 50</span>
+      <span class="legend-item"><span class="legend-color" style="color: #95e1d3;">●</span> EMA 200</span>
+      <span class="legend-item"><span class="legend-color" style="color: #00ff00;">●</span> Alcista</span>
+      <span class="legend-item"><span class="legend-color" style="color: #ff4444;">●</span> Bajista</span>
+    </div>
+  `;
+  document.querySelector(`#${containerId}`).insertAdjacentHTML('afterend', legendHTML);
+}
+
+// Calcular array de EMA
+function calculateEMAArray(prices, period) {
+  const k = 2 / (period + 1);
+  let ema = prices[0];
+  const result = [ema];
+
+  for (let i = 1; i < prices.length; i++) {
+    ema = prices[i] * k + ema * (1 - k);
+    result.push(ema);
+  }
+
+  return result;
+}
+
+// Crear gráfico de línea para timeframes secundarios
+function createLineChart(canvasId, data, timeframe) {
   if (state.charts[canvasId]) {
     state.charts[canvasId].destroy();
   }
@@ -134,7 +286,6 @@ function createCandleChart(canvasId, data, timeframe) {
 
   const ctx = canvas.getContext('2d');
   
-  // Preparar datos para el gráfico de línea (usamos Chart.js con línea + volumen)
   const prices = data.rawData.map(d => parseFloat(d.close)).reverse();
   const labels = data.rawData.map((d, i) => {
     const date = new Date(d.datetime);
@@ -213,25 +364,11 @@ function createCandleChart(canvasId, data, timeframe) {
   });
 }
 
-// Calcular array de EMA
-function calculateEMAArray(prices, period) {
-  const k = 2 / (period + 1);
-  let ema = prices[0];
-  const result = [ema];
-
-  for (let i = 1; i < prices.length; i++) {
-    ema = prices[i] * k + ema * (1 - k);
-    result.push(ema);
-  }
-
-  return result;
-}
-
 // Actualizar todos los gráficos
 function updateCharts(analysisData) {
-  createCandleChart('chart-1h', analysisData.analysis1h, '1h');
-  createCandleChart('chart-15m', analysisData.analysis15m, '15m');
-  createCandleChart('chart-5m', analysisData.analysis5m, '5m');
+  createCandleChartLW('chart-2h', analysisData.analysis2h);
+  createLineChart('chart-1h', analysisData.analysis1h, '1h');
+  createLineChart('chart-15m', analysisData.analysis15m, '15m');
 }
 
 // Actualizar todas las secciones
@@ -251,9 +388,9 @@ async function updateAll() {
     updateAlerts(analysisData.signals);
     
     // Actualizar análisis por timeframe
+    updateTimeframeAnalysis('2h', analysisData.analysis2h);
     updateTimeframeAnalysis('1h', analysisData.analysis1h);
     updateTimeframeAnalysis('15m', analysisData.analysis15m);
-    updateTimeframeAnalysis('5m', analysisData.analysis5m);
     
     // Actualizar gráficos
     updateCharts(analysisData);
@@ -282,11 +419,9 @@ document.getElementById('refreshBtn').addEventListener('click', () => {
 // Cambiar timeframe activo
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
-    // Remover clase active de todos
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
-    // Agregar clase active al clickeado
     e.target.classList.add('active');
     document.querySelector(`.tab-content[data-timeframe="${e.target.dataset.timeframe}"]`)
       .classList.add('active');
@@ -297,7 +432,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 console.log('🚀 Bot Forex iniciando...');
 updateAll();
 
-// Auto-refresh cada 60 segundos
+// Auto-refresh cada 20 segundos (para actualizar dentro de la vela de 2 horas)
 state.autoRefreshTimer = setInterval(updateAll, CONFIG.autoRefreshInterval);
 
 // Cleanup al cerrar
