@@ -6,23 +6,35 @@
     <title>Bot Forex - Análisis Multi-Timeframe</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🤖 Bot Forex - Análisis Técnico</h1>
-            <p>Monitoreo de Forex con Análisis Multi-Timeframe</p>
+            <p>Monitoreo de Forex y Criptomonedas con Análisis Multi-Timeframe</p>
         </header>
 
         <nav>
             <div class="nav-group">
-                <label for="pairSelector">Selecciona Par de Divisas:</label>
+                <label for="pairSelector">Selecciona Activo:</label>
                 <select id="pairSelector">
-                    <option value="EUR/USD">EUR/USD</option>
-                    <option value="GBP/USD">GBP/USD</option>
-                    <option value="USD/JPY">USD/JPY</option>
-                    <option value="USD/CHF">USD/CHF</option>
-                    <option value="AUD/USD">AUD/USD</option>
+                    <optgroup label="💱 FOREX (Lunes-Viernes)">
+                        <option value="EUR/USD">EUR/USD</option>
+                        <option value="GBP/USD">GBP/USD</option>
+                        <option value="USD/JPY">USD/JPY</option>
+                        <option value="USD/CHF">USD/CHF</option>
+                        <option value="AUD/USD">AUD/USD</option>
+                    </optgroup>
+                    <optgroup label="🪙 CRYPTO (24/7)">
+                        <option value="BTC/USD">Bitcoin (BTC/USD)</option>
+                        <option value="ETH/USD">Ethereum (ETH/USD)</option>
+                        <option value="XRP/USD">Ripple (XRP/USD)</option>
+                    </optgroup>
+                    <optgroup label="📊 ÍNDICES (Lunes-Viernes)">
+                        <option value="SPY">S&P 500 (SPY)</option>
+                        <option value="QQQ">Nasdaq (QQQ)</option>
+                    </optgroup>
                 </select>
             </div>
             <div class="nav-group">
@@ -41,6 +53,11 @@
                         <span id="priceChange" class="price-change">-</span>
                     </div>
                     <p id="priceTime" class="price-time">-</p>
+                    <div class="price-stats">
+                        <span>Mín: <strong id="priceMin">-</strong></span>
+                        <span>Máx: <strong id="priceMax">-</strong></span>
+                        <span>Vol: <strong id="priceVol">-</strong></span>
+                    </div>
                 </div>
             </section>
 
@@ -55,13 +72,39 @@
             <!-- Timeframe Tabs -->
             <section class="timeframes">
                 <div class="tab-buttons">
-                    <button class="tab-btn active" data-timeframe="1h">1 Hora</button>
+                    <button class="tab-btn active" data-timeframe="2h">2 Horas (Principal)</button>
+                    <button class="tab-btn" data-timeframe="1h">1 Hora</button>
                     <button class="tab-btn" data-timeframe="15m">15 Minutos</button>
-                    <button class="tab-btn" data-timeframe="5m">5 Minutos</button>
+                </div>
+
+                <!-- 2H Analysis (Principal) -->
+                <div class="tab-content active" data-timeframe="2h">
+                    <h3>Análisis - 2 Horas (Actualizado cada 20-30 min)</h3>
+                    <div class="analysis-grid">
+                        <div class="analysis-box">
+                            <h4>Tendencia</h4>
+                            <p id="trend-2h" class="trend-indicator">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>Zona de Interés</h4>
+                            <p id="zone-2h">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>RSI</h4>
+                            <p id="rsi-2h">-</p>
+                        </div>
+                        <div class="analysis-box">
+                            <h4>Volumen</h4>
+                            <p id="volume-2h">-</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div id="chart-2h" style="width: 100%; height: 100%;"></div>
+                    </div>
                 </div>
 
                 <!-- 1H Analysis -->
-                <div class="tab-content active" data-timeframe="1h">
+                <div class="tab-content" data-timeframe="1h">
                     <h3>Análisis - 1 Hora</h3>
                     <div class="analysis-grid">
                         <div class="analysis-box">
@@ -111,56 +154,34 @@
                         <canvas id="chart-15m"></canvas>
                     </div>
                 </div>
-
-                <!-- 5m Analysis -->
-                <div class="tab-content" data-timeframe="5m">
-                    <h3>Análisis - 5 Minutos (Entrada)</h3>
-                    <div class="analysis-grid">
-                        <div class="analysis-box">
-                            <h4>Tendencia</h4>
-                            <p id="trend-5m" class="trend-indicator">-</p>
-                        </div>
-                        <div class="analysis-box">
-                            <h4>Zona de Interés</h4>
-                            <p id="zone-5m">-</p>
-                        </div>
-                        <div class="analysis-box">
-                            <h4>RSI</h4>
-                            <p id="rsi-5m">-</p>
-                        </div>
-                        <div class="analysis-box">
-                            <h4>Volumen</h4>
-                            <p id="volume-5m">-</p>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="chart-5m"></canvas>
-                    </div>
-                </div>
             </section>
 
-            <!-- Sección Educativa (placeholder) -->
+            <!-- Sección Educativa -->
             <section class="education-section">
                 <h3>📚 Conceptos</h3>
                 <div class="education-grid">
                     <div class="edu-card">
                         <h4>¿Qué es RSI?</h4>
-                        <p>El Índice de Fuerza Relativa mide la magnitud de cambios en los precios. Valores &gt; 70 = Sobrecompra, &lt; 30 = Sobreventa.</p>
+                        <p>El Índice de Fuerza Relativa mide la magnitud de cambios en los precios. Valores > 70 = Sobrecompra, < 30 = Sobreventa.</p>
                     </div>
                     <div class="edu-card">
                         <h4>¿Qué es EMA?</h4>
                         <p>Media Móvil Exponencial que da más peso a los datos recientes. Las EMAs 20, 50 y 200 son zonas de soporte/resistencia dinámicas.</p>
                     </div>
                     <div class="edu-card">
+                        <h4>Velas de 2 Horas</h4>
+                        <p>Cada vela representa 2 horas de precio. Se actualiza cada 20-30 min mostrando el movimiento en tiempo real dentro de esa vela.</p>
+                    </div>
+                    <div class="edu-card">
                         <h4>Multi-Timeframe</h4>
-                        <p>Analizar múltiples temporalidades confirma la fuerza de una señal. 1H = contexto, 15m = confirmación, 5m = entrada.</p>
+                        <p>Analizar múltiples temporalidades confirma la fuerza de una señal. 2H = contexto, 1H = confirmación, 15m = entrada.</p>
                     </div>
                 </div>
             </section>
         </main>
 
         <footer>
-            <p>🔗 Datos en tiempo real desde Twelve Data | Actualización cada 60 segundos</p>
+            <p>🔗 Datos en tiempo real desde Twelve Data | Actualización cada 20-30 segundos | Soporta Forex, Crypto e Índices</p>
         </footer>
     </div>
 
