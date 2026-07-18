@@ -212,7 +212,7 @@ const ema200 = calculateEMA(prices, 200); // O este
 
 ### Modificar Condiciones de Señales
 
-En `server.js`, edita la sección de detección de señales (línea ~200):
+En `server.js`, edita la sección de detección de señales:
 
 ```javascript
 if (analysis1h.trend === "ALCISTA" && 
